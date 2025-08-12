@@ -6,7 +6,7 @@ use std::{
     sync::mpsc,
 };
 
-use auto_artifactarium::{GamePacket, GameSniffer, matches_achievement_packet};
+use auto_artifactarium::{matches_achievement_packet, matches_artifact_packet, GamePacket, GameSniffer};
 use base64::prelude::*;
 
 use regex::Regex;
@@ -53,6 +53,99 @@ pub fn sniff(
     }
 
     Ok(achievements)
+}
+
+#[derive(serde::Serialize)]
+#[allow(non_snake_case)]
+pub struct Artifact {
+    setKey: String,
+    slotKey: String,
+    level: u32,
+    rarity: u32,
+    mainStatKey: String,
+    lock: bool,
+    substats: Vec<super::Substat>
+}
+
+pub fn sniff_artifacts(
+    artifact_id_map: &HashMap<u32, super::ArtifactData>,
+    main_prop_map: &HashMap<u32, String>,
+    affix_prop_map: &HashMap<u32, super::Substat>,
+    device_rx: &mpsc::Receiver<Vec<u8>>,
+) -> anyhow::Result<Vec<Artifact>> {
+    let keys = load_keys()?;
+    let mut sniffer = GameSniffer::new().set_initial_keys(keys);
+
+    let mut artifacts = Vec::new();
+
+    while let Ok(data) = device_rx.recv() {
+        let Some(GamePacket::Commands(commands)) = sniffer.receive_packet(data) else {
+            continue;
+        };
+
+        for command in commands {
+            if let Some(read_artifacts) = matches_artifact_packet(&command) {
+                tracing::info!("Found artifact packet");
+
+                if !artifacts.is_empty() {
+                    continue;
+                }
+
+                for artifact in read_artifacts {
+                    if let Some(artifact_type) = artifact_id_map.get(&artifact.id) {
+                        let mut substats = Vec::<super::Substat>::new();
+                        for substat_id in artifact.append_prop_id_list {
+                            if let Some(current_substat) = affix_prop_map.get(&substat_id) {
+                                let mut found = false;
+                                for substat in substats.iter_mut() {
+                                    if substat.key == current_substat.key {
+                                        substat.value += current_substat.value;
+                                        found = true;
+                                        break;
+                                    }
+                                }
+
+                                if !found {
+                                    substats.push(current_substat.clone());
+                                }
+                            }
+                        }
+
+                        for substat in substats.iter_mut() {
+                            if substat.key.ends_with("_") {
+                                substat.value = ((substat.value * 100.0).round() / 10.0).round() / 10.0;
+                            }
+                            else {
+                                substat.value = substat.value.round();
+                            }
+                        }
+
+                        artifacts.push(
+                            Artifact{
+                                setKey: artifact_type.setKey.clone(),
+                                slotKey: artifact_type.slotKey.clone(),
+                                level: artifact.level - 1,
+                                rarity: artifact_type.rarity,
+                                mainStatKey: main_prop_map.get(&artifact.main_prop_id).cloned().unwrap_or_else(|| "null".to_string()),
+                                lock: artifact.is_locked,
+                                substats: substats
+                            }
+                        );
+                    }
+                }
+            }
+        }
+
+        if !artifacts.is_empty() {
+            break;
+        }
+    }
+
+    if artifacts.is_empty() {
+        return Err(anyhow::anyhow!("No artifacts found"));
+    }
+
+    Ok(artifacts)
 }
 
 fn load_keys() -> anyhow::Result<HashMap<u16, Vec<u8>>> {

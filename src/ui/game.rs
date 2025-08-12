@@ -29,6 +29,13 @@ pub fn show(ui: &mut egui::Ui, app: &App) {
                     .unwrap();
             }
 
+            if ui.button("Artifact Exporter").clicked() {
+                app.game.artifacts(&app.message_tx);
+                app.message_tx
+                    .send(Message::GoTo(State::Waiting("Preparing".to_string())))
+                    .unwrap();
+            }
+
             if ui.button("Wish Exporter").clicked() {
                 app.message_tx.send(Message::GoTo(State::PullMenu)).unwrap();
             }
