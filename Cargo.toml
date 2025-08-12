@@ -6,7 +6,7 @@ edition = "2024"
 [dependencies]
 anyhow = "1.0.98"
 arboard = "3.6.0"
-auto-artifactarium = { git = "https://github.com/hashblen/auto-artifactarium", version = "1.1.0" }
+auto-artifactarium = { git = "https://github.com/PJK136/auto-artifactarium", version = "1.2.0" }
 base64 = "0.22.1"
 eframe = { version = "0.31.1", features = ["persistence"] }
 egui = "0.31.1"
