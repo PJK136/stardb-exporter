@@ -15,6 +15,7 @@ pub enum State {
     PullMenu,
     Game,
     Achievements(Vec<u32>),
+    Artifacts(Vec<crate::games::Artifact>),
     Pulls(String),
     Error(String),
 }
@@ -240,6 +241,7 @@ impl eframe::App for App {
                 State::Login(username, password) => ui::login::show(ui, username, password, self),
                 State::Menu => ui::menu::show(ui, self),
                 State::Achievements(achievements) => ui::achievements::show(ui, achievements, self),
+                State::Artifacts(artifacts) => ui::artifacts::show(ui, artifacts, self),
                 State::Error(s) => ui::error::show(ui, s),
                 State::Game => ui::game::show(ui, self),
                 State::Pulls(url) => ui::pulls::show(ui, url, self),
@@ -257,7 +259,7 @@ fn update(message_tx: &mpsc::Sender<Message>) {
 
     thread::spawn(move || {
         let status = self_update::backends::github::Update::configure()
-            .repo_owner("juliuskreutz")
+            .repo_owner("PJK136")
             .repo_name("stardb-exporter")
             .bin_name("stardb-exporter")
             .current_version(self_update::cargo_crate_version!())
