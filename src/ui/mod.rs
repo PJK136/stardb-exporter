@@ -1,4 +1,5 @@
 pub mod achievements;
+pub mod artifacts;
 pub mod error;
 pub mod game;
 pub mod header;
