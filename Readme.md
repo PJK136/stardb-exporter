@@ -1,4 +1,34 @@
-# stardb-exporter
+# stardb-exporter with artifact exporter
+
+This is a fork of `stardb-exporter` with a feature to export artifacts as easily as achievements.
+
+<img width="802" height="628" alt="image" src="https://github.com/user-attachments/assets/38862900-a775-4729-a486-e3d41ebb4305" />
+
+
+The feature is still in alpha testing, any comments are welcome!
+
+You can download it here:
+- [Windows](https://github.com/PJK136/stardb-exporter/releases/latest/download/stardb-exporter.exe)
+
+It works the same way as the original `stardb-exporter`: run the game but don't go through the door, run the exporter, click on Artifact Exporter, go through the door, and wait for a button to copy the artifacts to your clipboard. It will be in the [GOOD](https://frzyc.github.io/genshin-optimizer/#/doc) format so it is ready to be imported anywhere else.
+
+I haven't changed any other functionality including the sponsored section so I'm not related to anything else except the Artifact Exporter.
+
+The protocol parser is also a fork I made to add the support for artifacts: [auto-artifactarium](https://github.com/PJK136/auto-artifactarium).
+
+This is my first project in Rust, so please forgive me for any bad practices in the code. 😅
+
+If you're interested, I can maintain it, add more features (e.g., exporting weapons, setting a minimum level for exporting, etc.) and/or make a pull request upstream.
+
+The feature doesn’t specifically require `stardb-exporter` (but thanks to them, I was able to release this first version so easily!). If there’s demand for it, I can also try to make it standalone or integrate it into other tools.
+
+You’re also free to reuse the code (at least the part I wrote) and improve it however you want, I'm glad to share the knowledge with other players. Just please credit me somewhere in your work.
+
+Feel free to reach out to me here in this repository or on Discord with any questions.
+
+Thanks to [@IceDynamix](https://github.com/IceDynamix), [@hashblen](https://github.com/hashblen), and [@juliuskreutz](https://github.com/juliuskreutz/stardb-exporter) for their publicly available work, which made this possible.
+
+# Original Readme of stardb-exporter
 
 > [!CAUTION]
 > HSR Achievement Exporter is not working as of the `2025-08-13`!
