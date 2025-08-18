@@ -20,7 +20,7 @@ pub fn show(ui: &mut egui::Ui, app: &App) {
             }
         }
         games::Game::Gi => {
-            ui.colored_label(ui.visuals().hyperlink_color, format!("{} Make sure, that you fresh started the game before using the achievement exporter!!", icons::INFORMATION_LINE));
+            ui.colored_label(ui.visuals().hyperlink_color, format!("{} Make sure, that you fresh started the game before using the achievement or inventory exporter!!", icons::INFORMATION_LINE));
 
             if ui.button("Achievement Exporter").clicked() {
                 app.game.achievements(&app.message_tx);
@@ -29,8 +29,8 @@ pub fn show(ui: &mut egui::Ui, app: &App) {
                     .unwrap();
             }
 
-            if ui.button("Artifact Exporter").clicked() {
-                app.game.artifacts(&app.message_tx);
+            if ui.button("Inventory Exporter").clicked() {
+                app.game.inventory(&app.message_tx);
                 app.message_tx
                     .send(Message::GoTo(State::Waiting("Preparing".to_string())))
                     .unwrap();

@@ -1,8 +1,8 @@
 pub mod achievements;
-pub mod artifacts;
 pub mod error;
 pub mod game;
 pub mod header;
+pub mod inventory;
 pub mod login;
 pub mod menu;
 pub mod pull_menu;

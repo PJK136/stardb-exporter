@@ -72,7 +72,7 @@ impl Game {
         });
     }
 
-    pub fn artifacts(self, message_tx: &mpsc::Sender<Message>) {
+    pub fn inventory(self, message_tx: &mpsc::Sender<Message>) {
         let message_tx = message_tx.clone();
 
         thread::spawn(move || {
@@ -103,6 +103,24 @@ impl Game {
                     return;
                 }
             };
+            let weapon_id_map = match build_weapon_id_map() {
+                Ok(weapon_id_map) => weapon_id_map,
+                Err(e) => {
+                    message_tx
+                        .send(Message::GoTo(State::Error(e.to_string())))
+                        .unwrap();
+                    return;
+                }
+            };
+            let material_id_map = match build_material_id_map() {
+                Ok(material_id_map) => material_id_map,
+                Err(e) => {
+                    message_tx
+                        .send(Message::GoTo(State::Error(e.to_string())))
+                        .unwrap();
+                    return;
+                }
+            };
 
             let devices = match self.devices() {
                 Ok(devices) => devices,
@@ -121,28 +139,30 @@ impl Game {
                 std::thread::spawn(move || self.capture_device(i, device, &device_tx, &message_tx));
             }
 
-            let artifacts = match self {
-                Game::Gi => gi::sniff_artifacts(
+            let inventory = match self {
+                Game::Gi => gi::sniff_inventory(
                     &artifact_id_map,
                     &main_prop_map,
                     &affix_prop_map,
+                    &weapon_id_map,
+                    &material_id_map,
                     &device_rx,
                 ),
                 _ => unimplemented!(),
             };
-            let artifacts = match artifacts {
-                Ok(artifacts) => artifacts,
+            match inventory {
+                Ok(inventory) => {
+                    message_tx
+                        .send(Message::GoTo(State::Inventory(inventory)))
+                        .unwrap();
+                }
+
                 Err(e) => {
                     message_tx
                         .send(Message::GoTo(State::Error(e.to_string())))
                         .unwrap();
-                    return;
                 }
             };
-
-            message_tx
-                .send(Message::GoTo(State::Artifacts(artifacts)))
-                .unwrap();
         });
     }
 
@@ -343,24 +363,30 @@ fn map_equip_type_to_good(input: &str) -> String {
     .to_owned()
 }
 
-fn map_set_name_to_good(input: &str) -> String {
+fn map_name_to_good(input: &str) -> String {
     let mut result = String::new();
     let mut capitalize_next = true;
 
     for c in input.chars() {
-        if c.is_alphabetic() {
+        if c.is_ascii_alphanumeric() {
             if capitalize_next {
                 result.extend(c.to_uppercase());
                 capitalize_next = false;
             } else {
-                result.extend(c.to_lowercase());
+                result.push(c);
             }
-        } else if c != '\'' {
+        } else if c == ' ' {
             capitalize_next = true;
         }
     }
 
     result
+}
+
+const TEXT_MAP_EN_JSON: &str = include_str!("../../data/TextMapEN.json");
+
+lazy_static::lazy_static! {
+    static ref TEXT_MAP_EN: HashMap<String, String> = serde_json::from_str(&TEXT_MAP_EN_JSON).unwrap();
 }
 
 pub fn build_artifact_id_map() -> anyhow::Result<HashMap<u32, ArtifactData>> {
@@ -369,9 +395,6 @@ pub fn build_artifact_id_map() -> anyhow::Result<HashMap<u32, ArtifactData>> {
 
     let display_item_excel_config_data: Vec<DisplayItemExcelConfigDataEntry> =
         serde_json::from_str(include_str!("../../data/DisplayItemExcelConfigData.json"))?;
-
-    let text_map_en: HashMap<String, String> =
-        serde_json::from_str(include_str!("../../data/TextMapEN.json"))?;
 
     // Map setId -> nameTextMapHash
     let mut setid_to_hash = HashMap::new();
@@ -386,11 +409,11 @@ pub fn build_artifact_id_map() -> anyhow::Result<HashMap<u32, ArtifactData>> {
     for entry in reliquary_excel_config_data {
         if let Some(hash_num) = setid_to_hash.get(&entry.setId) {
             let hash_str = hash_num.to_string();
-            if let Some(text) = text_map_en.get(&hash_str) {
+            if let Some(text) = TEXT_MAP_EN.get(&hash_str) {
                 result.insert(
                     entry.id,
                     ArtifactData {
-                        setKey: map_set_name_to_good(text),
+                        setKey: map_name_to_good(text),
                         slotKey: map_equip_type_to_good(&entry.equipType).to_string(),
                         rarity: entry.rankLevel,
                     },
@@ -501,4 +524,72 @@ pub fn build_affix_prop_map() -> anyhow::Result<HashMap<u32, Substat>> {
     Ok(result)
 }
 
+#[derive(serde::Deserialize)]
+#[allow(non_snake_case)]
+struct WeaponExcelConfigDataEntry {
+    id: u32,
+    nameTextMapHash: u32,
+    rankLevel: u32,
+}
+
+#[derive(Debug)]
+#[allow(non_snake_case)]
+pub struct WeaponData {
+    pub name: String,
+    pub rarity: u32,
+}
+
+pub fn build_weapon_id_map() -> anyhow::Result<HashMap<u32, WeaponData>> {
+    let weapon_excel_config: Vec<WeaponExcelConfigDataEntry> =
+        serde_json::from_str(include_str!("../../data/WeaponExcelConfigData.json"))?;
+
+    let mut result = HashMap::new();
+    for entry in weapon_excel_config {
+        let hash_str = entry.nameTextMapHash.to_string();
+        if let Some(text) = TEXT_MAP_EN.get(&hash_str) {
+            result.insert(
+                entry.id,
+                WeaponData {
+                    name: map_name_to_good(text),
+                    rarity: entry.rankLevel,
+                },
+            );
+        }
+    }
+
+    for (id, data) in &result {
+        tracing::trace!("ID {} => {:?}", id, data);
+    }
+
+    Ok(result)
+}
+
+#[derive(serde::Deserialize)]
+#[allow(non_snake_case)]
+struct MaterialExcelConfigDataEntry {
+    id: u32,
+    nameTextMapHash: u32,
+}
+
+pub fn build_material_id_map() -> anyhow::Result<HashMap<u32, String>> {
+    let material_excel_config: Vec<MaterialExcelConfigDataEntry> =
+        serde_json::from_str(include_str!("../../data/MaterialExcelConfigData.json"))?;
+
+    let mut result = HashMap::new();
+    for entry in material_excel_config {
+        let hash_str = entry.nameTextMapHash.to_string();
+        if let Some(text) = TEXT_MAP_EN.get(&hash_str) {
+            result.insert(entry.id, map_name_to_good(text));
+        }
+    }
+
+    for (id, data) in &result {
+        tracing::trace!("ID {} => {:?}", id, data);
+    }
+
+    Ok(result)
+}
+
 pub use gi::Artifact;
+pub use gi::Inventory;
+pub use gi::Weapon;
