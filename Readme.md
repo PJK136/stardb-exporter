@@ -1,21 +1,21 @@
-# stardb-exporter with inventory exporter (artifacts, weapons and materials)
+# stardb-exporter with inventory exporter
 
-This is a fork of `stardb-exporter` with a feature to export the inventory as easily as achievements.
+This is a fork of `stardb-exporter` with a feature to export the inventory (artifacts, weapons and materials) as easily as achievements.
 
-<img width="802" height="628" alt="image" src="https://github.com/user-attachments/assets/38862900-a775-4729-a486-e3d41ebb4305" />
-
+<img width="802" height="628" alt="image" src="https://github.com/user-attachments/assets/83ac495f-8325-4c9f-9da8-b6ff556bc909" />
 
 The feature is still in alpha testing, any comments are welcome!
 
 You can download it here:
 - [Windows](https://github.com/PJK136/stardb-exporter/releases/latest/download/stardb-exporter.exe)
 
+
 You will also need to install pcap (please see the original readme below).
 
 It works the same way as the original `stardb-exporter`: run the game but don't go through the door, run the exporter, click on Inventory Exporter, go through the door, and wait for a button to copy the inventory to your clipboard. It will be in the [GOOD](https://frzyc.github.io/genshin-optimizer/#/doc) format so it is ready to be imported anywhere else.
 
 For the moment, these are the hard-coded filters:
-- Artifacts: at least at level 1 and a rarity of 3* (to avoid importing non-leveled artifacts and 1-2 stars are marked as invalid by Genshin Optimizer)
+- Artifacts: at least at level 1 and at least a rarity of 3* (to avoid importing non-leveled artifacts and 1-2 stars are marked as invalid by Genshin Optimizer)
 - Weapons: at least a rarity of 4* or at least at level 2 or at least at refinement 2 or is locked
 
 I haven't changed any other functionality including the sponsored section so I'm not related to anything else except the Inventory Exporter.
