@@ -3,7 +3,7 @@
 import json
 import shutil
 
-SOURCE_JSON="DisplayItemExcelConfigData.json"
+SOURCES=["DisplayItemExcelConfigData.json", "MaterialExcelConfigData.json", "WeaponExcelConfigData.json"]
 TEXTMAP_JSON="TextMapEN.json"
 
 def get_name_hashes(file_path):
@@ -11,7 +11,10 @@ def get_name_hashes(file_path):
         data = json.load(f)
     return {str(item["nameTextMapHash"]) for item in data if "nameTextMapHash" in item}
 
-possible_hashes = get_name_hashes(SOURCE_JSON)
+possible_hashes = set()
+
+for source in SOURCES:
+    possible_hashes |= get_name_hashes(source)
 
 shutil.copy(TEXTMAP_JSON, TEXTMAP_JSON + ".bak")
 

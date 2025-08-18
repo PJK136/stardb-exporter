@@ -6,7 +6,7 @@ use std::{
     sync::mpsc,
 };
 
-use auto_artifactarium::{matches_achievement_packet, matches_artifact_packet, GamePacket, GameSniffer};
+use auto_artifactarium::{matches_achievement_packet, matches_item_packet, GamePacket, GameSniffer};
 use base64::prelude::*;
 
 use regex::Regex;
@@ -63,38 +63,69 @@ pub struct Artifact {
     level: u32,
     rarity: u32,
     mainStatKey: String,
+    location: String,
     lock: bool,
     substats: Vec<super::Substat>
 }
 
-pub fn sniff_artifacts(
+#[derive(serde::Serialize)]
+#[allow(non_snake_case)]
+pub struct Weapon {
+    key: String,
+    level: u32,
+    ascension: u32,
+    refinement: u32,
+    location: String,
+    lock: bool
+}
+
+#[derive(serde::Serialize)]
+#[allow(non_snake_case)]
+pub struct Inventory {
+    pub artifacts: Vec<Artifact>,
+    pub weapon: Vec<Weapon>,
+    pub materials: HashMap<String, u32>
+}
+
+pub fn sniff_inventory(
     artifact_id_map: &HashMap<u32, super::ArtifactData>,
     main_prop_map: &HashMap<u32, String>,
     affix_prop_map: &HashMap<u32, super::Substat>,
+    weapon_id_map: &HashMap<u32, super::WeaponData>,
+    material_id_map: &HashMap<u32, String>,
     device_rx: &mpsc::Receiver<Vec<u8>>,
-) -> anyhow::Result<Vec<Artifact>> {
+) -> anyhow::Result<Inventory> {
     let keys = load_keys()?;
     let mut sniffer = GameSniffer::new().set_initial_keys(keys);
 
-    let mut artifacts = Vec::new();
+    let mut inventory = Inventory{ artifacts: Vec::new(), weapon: Vec::new(), materials: HashMap::new() };
 
-    while let Ok(data) = device_rx.recv() {
+    let mut found = false;
+
+    while !found && let Ok(data) = device_rx.recv() {
         let Some(GamePacket::Commands(commands)) = sniffer.receive_packet(data) else {
             continue;
         };
 
         for command in commands {
-            if let Some(read_artifacts) = matches_artifact_packet(&command) {
-                tracing::info!("Found artifact packet");
+            let Some(read_items) = matches_item_packet(&command) else {
+                continue;
+            };
 
-                if !artifacts.is_empty() {
-                    continue;
-                }
+            tracing::info!("Found item packet");
 
-                for artifact in read_artifacts {
-                    if let Some(artifact_type) = artifact_id_map.get(&artifact.id) {
+            for item in read_items {
+                if item.has_equip() {
+                    let equip = item.equip();
+
+                    if equip.has_reliquary() && let Some(artifact_type) = artifact_id_map.get(&item.item_id) {
+                        let artifact = equip.reliquary();
+                        if artifact.level < 2 || artifact_type.rarity < 3 {
+                            continue;
+                        }
+
                         let mut substats = Vec::<super::Substat>::new();
-                        for substat_id in artifact.append_prop_id_list {
+                        for substat_id in &artifact.append_prop_id_list {
                             if let Some(current_substat) = affix_prop_map.get(&substat_id) {
                                 let mut found = false;
                                 for substat in substats.iter_mut() {
@@ -120,32 +151,62 @@ pub fn sniff_artifacts(
                             }
                         }
 
-                        artifacts.push(
+                        inventory.artifacts.push(
                             Artifact{
                                 setKey: artifact_type.setKey.clone(),
                                 slotKey: artifact_type.slotKey.clone(),
                                 level: artifact.level - 1,
                                 rarity: artifact_type.rarity,
                                 mainStatKey: main_prop_map.get(&artifact.main_prop_id).cloned().unwrap_or_else(|| "null".to_string()),
-                                lock: artifact.is_locked,
+                                location: "".to_string(),
+                                lock: equip.is_locked,
                                 substats: substats
                             }
                         );
+
+                        found = true;
                     }
+
+                    if equip.has_weapon() && let Some(weapon_data) = weapon_id_map.get(&item.item_id){
+                        let weapon = equip.weapon();
+                        let refinement = match weapon.affix_map.values().next() {
+                            Some(&x) => 1 + x,
+                            None => 1,
+                        };
+
+                        if weapon_data.rarity < 4 && weapon.level == 1 && refinement == 1 && !equip.is_locked {
+                            continue;
+                        }
+
+                        inventory.weapon.push(
+                            Weapon{
+                                key: weapon_data.name.clone(),
+                                level: weapon.level,
+                                ascension: weapon.promote_level,
+                                refinement: refinement,
+                                location: "".to_string(),
+                                lock: equip.is_locked,
+                            }
+                        );
+
+                        found = true;
+                    }
+                }
+
+                if item.has_material() && let material = item.material() && let Some(name) = material_id_map.get(&item.item_id) {
+                    inventory.materials.insert(name.clone(), material.count);
+
+                    found = true;
                 }
             }
         }
-
-        if !artifacts.is_empty() {
-            break;
-        }
     }
 
-    if artifacts.is_empty() {
-        return Err(anyhow::anyhow!("No artifacts found"));
+    if !found {
+        return Err(anyhow::anyhow!("No items found"));
     }
 
-    Ok(artifacts)
+    Ok(inventory)
 }
 
 fn load_keys() -> anyhow::Result<HashMap<u16, Vec<u8>>> {

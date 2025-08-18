@@ -1,6 +1,6 @@
-# stardb-exporter with artifact exporter
+# stardb-exporter with inventory exporter (artifacts, weapons and materials)
 
-This is a fork of `stardb-exporter` with a feature to export artifacts as easily as achievements.
+This is a fork of `stardb-exporter` with a feature to export the inventory as easily as achievements.
 
 <img width="802" height="628" alt="image" src="https://github.com/user-attachments/assets/38862900-a775-4729-a486-e3d41ebb4305" />
 
@@ -10,15 +10,21 @@ The feature is still in alpha testing, any comments are welcome!
 You can download it here:
 - [Windows](https://github.com/PJK136/stardb-exporter/releases/latest/download/stardb-exporter.exe)
 
-It works the same way as the original `stardb-exporter`: run the game but don't go through the door, run the exporter, click on Artifact Exporter, go through the door, and wait for a button to copy the artifacts to your clipboard. It will be in the [GOOD](https://frzyc.github.io/genshin-optimizer/#/doc) format so it is ready to be imported anywhere else.
+You will also need to install pcap (please see the original readme below).
 
-I haven't changed any other functionality including the sponsored section so I'm not related to anything else except the Artifact Exporter.
+It works the same way as the original `stardb-exporter`: run the game but don't go through the door, run the exporter, click on Inventory Exporter, go through the door, and wait for a button to copy the inventory to your clipboard. It will be in the [GOOD](https://frzyc.github.io/genshin-optimizer/#/doc) format so it is ready to be imported anywhere else.
 
-The protocol parser is also a fork I made to add the support for artifacts: [auto-artifactarium](https://github.com/PJK136/auto-artifactarium).
+For the moment, these are the hard-coded filters:
+- Artifacts: at least at level 1 and a rarity of 3* (to avoid importing non-leveled artifacts and 1-2 stars are marked as invalid by Genshin Optimizer)
+- Weapons: at least a rarity of 4* or at least at level 2 or at least at refinement 2 or is locked
+
+I haven't changed any other functionality including the sponsored section so I'm not related to anything else except the Inventory Exporter.
+
+The protocol parser is also a fork I made to add the support for the inventory: [auto-artifactarium](https://github.com/PJK136/auto-artifactarium).
 
 This is my first project in Rust, so please forgive me for any bad practices in the code. 😅
 
-If you're interested, I can maintain it, add more features (e.g., exporting weapons, setting a minimum level for exporting, etc.) and/or make a pull request upstream.
+If you're interested, I can maintain it, add more features (e.g., UI for setting a minimum level for exporting, etc.) and/or make a pull request upstream.
 
 The feature doesn’t specifically require `stardb-exporter` (but thanks to them, I was able to release this first version so easily!). If there’s demand for it, I can also try to make it standalone or integrate it into other tools.
 

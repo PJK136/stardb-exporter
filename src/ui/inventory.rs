@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::{
     app::{App, Message, State},
     games,
@@ -10,20 +12,19 @@ pub struct GOOD<'a> {
     version: u32,
     source: &'a str,
     artifacts: &'a Vec<games::Artifact>,
+    weapons: &'a Vec<games::Weapon>,
+    materials: &'a HashMap<String, u32>,
 }
 
-pub fn show(ui: &mut egui::Ui, artifacts: &Vec<games::Artifact>, app: &App) {
-    match app.game {
-        games::Game::Gi => "gi_artifacts",
-        _ => unimplemented!(),
-    };
-
+pub fn show(ui: &mut egui::Ui, inventory: &games::Inventory, app: &App) {
     ui.label("Finished");
 
     if ui
         .button(format!(
-            "Copy {} artifacts to clipboard",
-            artifacts.len()
+            "Copy {} artifacts, {} weapons and {} materials to clipboard",
+            inventory.artifacts.len(),
+            inventory.weapon.len(),
+            inventory.materials.len(),
         ))
         .clicked()
     {
@@ -32,8 +33,10 @@ pub fn show(ui: &mut egui::Ui, artifacts: &Vec<games::Artifact>, app: &App) {
                 GOOD{
                     format: "GOOD",
                     version: 2,
-                    source: "stardb-exporter",
-                    artifacts: artifacts
+                    source: "stardb-exporter fork by PJK136",
+                    artifacts: &inventory.artifacts,
+                    weapons: &inventory.weapon,
+                    materials: &inventory.materials
                 }).to_string()))
         {
             app.message_tx
