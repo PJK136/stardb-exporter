@@ -2,7 +2,8 @@
 
 This is a fork of `stardb-exporter` with a feature to export the inventory (artifacts, weapons and materials) as easily as achievements.
 
-<img width="802" height="628" alt="image" src="https://github.com/user-attachments/assets/83ac495f-8325-4c9f-9da8-b6ff556bc909" />
+<img width="802" height="628" alt="image" src="https://github.com/user-attachments/assets/51e04825-fe32-4619-8105-4d1e69c45e01" />
+
 
 The feature is still in alpha testing, any comments are welcome!
 
