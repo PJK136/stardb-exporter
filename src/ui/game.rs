@@ -30,7 +30,17 @@ pub fn show(ui: &mut egui::Ui, app: &App) {
             }
 
             if ui.button("Inventory Exporter").clicked() {
-                app.game.inventory(&app.message_tx);
+                app.game.inventory(&app.message_tx, false);
+                app.message_tx
+                    .send(Message::GoTo(State::Waiting("Preparing".to_string())))
+                    .unwrap();
+            }
+
+            if ui
+                .button("Inventory Exporter without artifact filtering")
+                .clicked()
+            {
+                app.game.inventory(&app.message_tx, true);
                 app.message_tx
                     .send(Message::GoTo(State::Waiting("Preparing".to_string())))
                     .unwrap();

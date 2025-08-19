@@ -96,6 +96,7 @@ pub fn sniff_inventory(
     weapon_id_map: &HashMap<u32, super::WeaponData>,
     material_id_map: &HashMap<u32, String>,
     device_rx: &mpsc::Receiver<Vec<u8>>,
+    no_artifact_filter: bool,
 ) -> anyhow::Result<Inventory> {
     let keys = load_keys()?;
     let mut sniffer = GameSniffer::new().set_initial_keys(keys);
@@ -128,7 +129,7 @@ pub fn sniff_inventory(
                         && let Some(artifact_type) = artifact_id_map.get(&item.item_id)
                     {
                         let artifact = equip.reliquary();
-                        if artifact.level < 2 || artifact_type.rarity < 3 {
+                        if !no_artifact_filter && (artifact.level < 2 || artifact_type.rarity < 3) {
                             continue;
                         }
 
