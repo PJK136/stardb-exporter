@@ -69,7 +69,7 @@ impl Game {
         });
     }
 
-    pub fn inventory(self, message_tx: &mpsc::Sender<Message>) {
+    pub fn inventory(self, message_tx: &mpsc::Sender<Message>, no_artifact_filter: bool) {
         let message_tx = message_tx.clone();
 
         thread::spawn(move || {
@@ -137,7 +137,7 @@ impl Game {
             }
 
             let inventory = match self {
-                Game::Gi => gi::sniff_inventory(&artifact_id_map, &main_prop_map, &affix_prop_map, &weapon_id_map, &material_id_map, &device_rx),
+                Game::Gi => gi::sniff_inventory(&artifact_id_map, &main_prop_map, &affix_prop_map, &weapon_id_map, &material_id_map, &device_rx, no_artifact_filter),
                 _ => unimplemented!(),
             };
             match inventory {
