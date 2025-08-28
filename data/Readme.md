@@ -2,6 +2,7 @@
 
 Put the following files in this directory:
 * `AvatarExcelConfigData.json`
+* `AvatarSkillDepotExcelConfigData.json`
 * `DisplayItemExcelConfigData.json`
 * `MaterialExcelConfigData.json`
 * `ReliquaryAffixExcelConfigData.json`
