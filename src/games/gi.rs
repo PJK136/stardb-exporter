@@ -13,6 +13,8 @@ use base64::prelude::*;
 
 use regex::Regex;
 
+use crate::games::SkillType;
+
 pub fn sniff(
     achievement_ids: &[u32],
     device_rx: &mpsc::Receiver<Vec<u8>>,
@@ -84,9 +86,28 @@ pub struct Weapon {
 #[derive(serde::Serialize)]
 #[allow(non_snake_case)]
 pub struct Inventory {
+    pub characters: Vec<Character>,
     pub artifacts: Vec<Artifact>,
     pub weapon: Vec<Weapon>,
     pub materials: HashMap<String, u32>,
+}
+
+#[derive(serde::Serialize)]
+#[allow(non_snake_case)]
+pub struct CharacterTalent {
+    pub auto: u32,
+    pub skill: u32,
+    pub burst: u32,
+}
+
+#[derive(serde::Serialize)]
+#[allow(non_snake_case)]
+pub struct Character {
+    pub key: String,
+    pub level: u32,
+    pub constellation: u32,
+    pub ascension: u32,
+    pub talent: CharacterTalent,
 }
 
 pub fn sniff_inventory(
@@ -96,6 +117,7 @@ pub fn sniff_inventory(
     weapon_id_map: &HashMap<u32, super::WeaponData>,
     material_id_map: &HashMap<u32, String>,
     character_id_map: &HashMap<u32, String>,
+    skill_type_map: &HashMap<u32, SkillType>,
     device_rx: &mpsc::Receiver<Vec<u8>>,
     no_artifact_filter: bool,
     without_character: bool,
@@ -104,6 +126,7 @@ pub fn sniff_inventory(
     let mut sniffer = GameSniffer::new().set_initial_keys(keys);
 
     let mut inventory = Inventory {
+        characters: Vec::new(),
         artifacts: Vec::new(),
         weapon: Vec::new(),
         materials: HashMap::new(),
@@ -132,12 +155,58 @@ pub fn sniff_inventory(
             {
                 tracing::info!("Found avatar packet");
 
-                for avatar in read_avatars {
-                    if let Some(name) = character_id_map.get(&avatar.avatar_id) {
-                        for guid in avatar.equip_guid_list {
-                            item_guid_character_name_map.insert(guid, name);
+                for avatar in &read_avatars {
+                    // In dumps, `avatar_type` is observerd to be either 1 or 3.  The entries of
+                    // type 3 are incomplete and do not contain all the data needed.  It is unclear
+                    // what types 1 and 3 represent or if there are other types that can be seen.
+                    if avatar.avatar_type != 1 {
+                        continue;
+                    }
+
+                    let Some(name) = character_id_map.get(&avatar.avatar_id) else {
+                        continue;
+                    };
+
+                    for guid in &avatar.equip_guid_list {
+                        item_guid_character_name_map.insert(*guid, name);
+                    }
+
+                    let Some(level) = avatar.prop_map.get(&4001).map(|prop| prop.val as u32) else {
+                        continue;
+                    };
+
+                    let Some(ascension) = avatar.prop_map.get(&1002).map(|prop| prop.val as u32)
+                    else {
+                        continue;
+                    };
+
+                    let constellation = avatar.talent_id_list.len() as u32;
+
+                    tracing::trace!("char {name}: {avatar:#?}");
+
+                    let mut auto = 1;
+                    let mut skill = 1;
+                    let mut burst = 1;
+
+                    for (id, level) in &avatar.skill_level_map {
+                        let Some(ty) = skill_type_map.get(id) else {
+                            continue;
+                        };
+                        match ty {
+                            SkillType::Auto => auto = *level,
+                            SkillType::Skill => skill = *level,
+                            SkillType::Burst => burst = *level,
                         }
                     }
+
+                    let character = Character {
+                        key: name.clone(),
+                        level,
+                        constellation,
+                        ascension,
+                        talent: CharacterTalent { auto, skill, burst },
+                    };
+                    inventory.characters.push(character);
                 }
             };
 

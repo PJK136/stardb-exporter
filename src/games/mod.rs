@@ -137,6 +137,16 @@ impl Game {
                 }
             };
 
+            let skill_type_map = match build_skill_type_map() {
+                Ok(skill_type_map) => skill_type_map,
+                Err(e) => {
+                    message_tx
+                        .send(Message::GoTo(State::Error(e.to_string())))
+                        .unwrap();
+                    return;
+                }
+            };
+
             let devices = match self.devices() {
                 Ok(devices) => devices,
                 Err(e) => {
@@ -162,6 +172,7 @@ impl Game {
                     &weapon_id_map,
                     &material_id_map,
                     &character_id_map,
+                    &skill_type_map,
                     &device_rx,
                     no_artifact_filter,
                     without_character,
@@ -634,6 +645,36 @@ pub fn build_character_id_map() -> anyhow::Result<HashMap<u32, String>> {
     Ok(result)
 }
 
+#[derive(serde::Deserialize)]
+#[allow(non_snake_case)]
+pub struct AvatarSkillDepotExcelConfigDataEntry {
+    pub energySkill: u32,
+    pub skills: Vec<u32>,
+}
+
+#[derive(Copy, Clone, Debug)]
+pub enum SkillType {
+    Auto,
+    Skill,
+    Burst,
+}
+
+pub fn build_skill_type_map() -> anyhow::Result<HashMap<u32, SkillType>> {
+    let avatar_skill_depot_excel_config_data: Vec<AvatarSkillDepotExcelConfigDataEntry> =
+        serde_json::from_str(include_str!(
+            "../../data/AvatarSkillDepotExcelConfigData.json"
+        ))?;
+    let mut type_map = HashMap::new();
+    for config in avatar_skill_depot_excel_config_data {
+        type_map.insert(config.energySkill, SkillType::Burst);
+        type_map.insert(config.skills[0], SkillType::Auto);
+        type_map.insert(config.skills[1], SkillType::Skill);
+    }
+
+    Ok(type_map)
+}
+
 pub use gi::Artifact;
+pub use gi::Character;
 pub use gi::Inventory;
 pub use gi::Weapon;

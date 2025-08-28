@@ -11,6 +11,7 @@ pub struct GOOD<'a> {
     format: &'a str,
     version: u32,
     source: &'a str,
+    characters: &'a Vec<games::Character>,
     artifacts: &'a Vec<games::Artifact>,
     weapons: &'a Vec<games::Weapon>,
     materials: &'a HashMap<String, u32>,
@@ -21,10 +22,11 @@ pub fn show(ui: &mut egui::Ui, inventory: &games::Inventory, app: &App) {
 
     if ui
         .button(format!(
-            "Copy {} artifacts, {} weapons and {} materials to clipboard",
+            "Copy {} artifacts, {} weapons, {} materials, and {} characters to clipboard",
             inventory.artifacts.len(),
             inventory.weapon.len(),
             inventory.materials.len(),
+            inventory.characters.len(),
         ))
         .clicked()
     {
@@ -34,6 +36,7 @@ pub fn show(ui: &mut egui::Ui, inventory: &games::Inventory, app: &App) {
                     format: "GOOD",
                     version: 2,
                     source: "stardb-exporter fork by PJK136",
+                    characters: &inventory.characters,
                     artifacts: &inventory.artifacts,
                     weapons: &inventory.weapon,
                     materials: &inventory.materials
