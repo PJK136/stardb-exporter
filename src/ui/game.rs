@@ -29,18 +29,31 @@ pub fn show(ui: &mut egui::Ui, app: &App) {
                     .unwrap();
             }
 
-            if ui.button("Inventory Exporter").clicked() {
-                app.game.inventory(&app.message_tx, false);
+            if ui
+                .button("Inventory Exporter: filtered artifacts & equipped characters")
+                .clicked()
+            {
+                app.game.inventory(&app.message_tx, false, false);
                 app.message_tx
                     .send(Message::GoTo(State::Waiting("Preparing".to_string())))
                     .unwrap();
             }
 
             if ui
-                .button("Inventory Exporter without artifact filtering")
+                .button("Inventory Exporter: filtered artifacts & without characters")
                 .clicked()
             {
-                app.game.inventory(&app.message_tx, true);
+                app.game.inventory(&app.message_tx, false, true);
+                app.message_tx
+                    .send(Message::GoTo(State::Waiting("Preparing".to_string())))
+                    .unwrap();
+            }
+
+            if ui
+                .button("Inventory Exporter: all artifacts & equipped characters")
+                .clicked()
+            {
+                app.game.inventory(&app.message_tx, true, false);
                 app.message_tx
                     .send(Message::GoTo(State::Waiting("Preparing".to_string())))
                     .unwrap();

@@ -7,7 +7,7 @@ use std::{
 };
 
 use auto_artifactarium::{
-    GamePacket, GameSniffer, matches_achievement_packet, matches_item_packet,
+    GamePacket, GameSniffer, matches_achievement_packet, matches_avatar_packet, matches_item_packet,
 };
 use base64::prelude::*;
 
@@ -95,8 +95,10 @@ pub fn sniff_inventory(
     affix_prop_map: &HashMap<u32, super::Substat>,
     weapon_id_map: &HashMap<u32, super::WeaponData>,
     material_id_map: &HashMap<u32, String>,
+    character_id_map: &HashMap<u32, String>,
     device_rx: &mpsc::Receiver<Vec<u8>>,
     no_artifact_filter: bool,
+    without_character: bool,
 ) -> anyhow::Result<Inventory> {
     let keys = load_keys()?;
     let mut sniffer = GameSniffer::new().set_initial_keys(keys);
@@ -106,6 +108,8 @@ pub fn sniff_inventory(
         weapon: Vec::new(),
         materials: HashMap::new(),
     };
+    let mut items = Vec::new();
+    let mut item_guid_character_name_map = HashMap::<u64, &String>::new();
 
     let mut found = false;
 
@@ -115,21 +119,48 @@ pub fn sniff_inventory(
         };
 
         for command in commands {
-            let Some(read_items) = matches_item_packet(&command) else {
-                continue;
+            if let Some(mut read_items) = matches_item_packet(&command)
+                && !read_items.is_empty()
+            {
+                tracing::info!("Found item packet");
+                items.append(&mut read_items);
             };
 
-            tracing::info!("Found item packet");
+            if !without_character
+                && let Some(read_avatars) = matches_avatar_packet(&command)
+                && !read_avatars.is_empty()
+            {
+                tracing::info!("Found avatar packet");
 
-            for item in read_items {
+                for avatar in read_avatars {
+                    if let Some(name) = character_id_map.get(&avatar.avatar_id) {
+                        for guid in avatar.equip_guid_list {
+                            item_guid_character_name_map.insert(guid, name);
+                        }
+                    }
+                }
+            };
+
+            if !without_character && item_guid_character_name_map.is_empty() {
+                continue;
+            }
+
+            for item in &items {
                 if item.has_equip() {
                     let equip = item.equip();
+                    let location = item_guid_character_name_map
+                        .get(&item.guid)
+                        .map(|s| (*s).clone())
+                        .unwrap_or_default();
 
                     if equip.has_reliquary()
                         && let Some(artifact_type) = artifact_id_map.get(&item.item_id)
                     {
                         let artifact = equip.reliquary();
-                        if !no_artifact_filter && (artifact.level < 2 || artifact_type.rarity < 3) {
+                        if !no_artifact_filter
+                            && (artifact.level < 2 || artifact_type.rarity < 3)
+                            && location.is_empty()
+                        {
                             continue;
                         }
 
@@ -168,16 +199,14 @@ pub fn sniff_inventory(
                             mainStatKey: main_prop_map
                                 .get(&artifact.main_prop_id)
                                 .cloned()
-                                .unwrap_or_else(|| "null".to_string()),
-                            location: "".to_string(),
+                                .unwrap_or("null".to_string()),
+                            location: location,
                             lock: equip.is_locked,
                             substats: substats,
                         });
 
                         found = true;
-                    }
-
-                    if equip.has_weapon()
+                    } else if equip.has_weapon()
                         && let Some(weapon_data) = weapon_id_map.get(&item.item_id)
                     {
                         let weapon = equip.weapon();
@@ -190,6 +219,7 @@ pub fn sniff_inventory(
                             && weapon.level == 1
                             && refinement == 1
                             && !equip.is_locked
+                            && location.is_empty()
                         {
                             continue;
                         }
@@ -199,7 +229,7 @@ pub fn sniff_inventory(
                             level: weapon.level,
                             ascension: weapon.promote_level,
                             refinement: refinement,
-                            location: "".to_string(),
+                            location: location,
                             lock: equip.is_locked,
                         });
 
@@ -216,6 +246,8 @@ pub fn sniff_inventory(
                     found = true;
                 }
             }
+
+            items.clear();
         }
     }
 

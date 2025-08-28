@@ -481,8 +481,8 @@ dependencies = [
 
 [[package]]
 name = "auto-artifactarium"
-version = "1.3.0"
-source = "git+https://github.com/PJK136/auto-artifactarium#6977260d7ec62355cb04cf0bda3bba10eb3c0957"
+version = "1.4.0"
+source = "git+https://github.com/PJK136/auto-artifactarium#bf511639f530445787c72b5939d3615e9249a685"
 dependencies = [
  "base64",
  "etherparse",
@@ -4287,7 +4287,7 @@ checksum = "a8f112729512f8e442d81f95a8a7ddf2b7c6b8a1a6f509a95864142b30cab2d3"
 
 [[package]]
 name = "stardb-exporter"
-version = "2.11.7"
+version = "2.11.8"
 dependencies = [
  "anyhow",
  "arboard",

@@ -72,7 +72,12 @@ impl Game {
         });
     }
 
-    pub fn inventory(self, message_tx: &mpsc::Sender<Message>, no_artifact_filter: bool) {
+    pub fn inventory(
+        self,
+        message_tx: &mpsc::Sender<Message>,
+        no_artifact_filter: bool,
+        without_character: bool,
+    ) {
         let message_tx = message_tx.clone();
 
         thread::spawn(move || {
@@ -122,6 +127,16 @@ impl Game {
                 }
             };
 
+            let character_id_map = match build_character_id_map() {
+                Ok(character_id_map) => character_id_map,
+                Err(e) => {
+                    message_tx
+                        .send(Message::GoTo(State::Error(e.to_string())))
+                        .unwrap();
+                    return;
+                }
+            };
+
             let devices = match self.devices() {
                 Ok(devices) => devices,
                 Err(e) => {
@@ -146,8 +161,10 @@ impl Game {
                     &affix_prop_map,
                     &weapon_id_map,
                     &material_id_map,
+                    &character_id_map,
                     &device_rx,
                     no_artifact_filter,
+                    without_character,
                 ),
                 _ => unimplemented!(),
             };
@@ -578,6 +595,32 @@ pub fn build_material_id_map() -> anyhow::Result<HashMap<u32, String>> {
 
     let mut result = HashMap::new();
     for entry in material_excel_config {
+        let hash_str = entry.nameTextMapHash.to_string();
+        if let Some(text) = TEXT_MAP_EN.get(&hash_str) {
+            result.insert(entry.id, map_name_to_good(text));
+        }
+    }
+
+    for (id, data) in &result {
+        tracing::trace!("ID {} => {:?}", id, data);
+    }
+
+    Ok(result)
+}
+
+#[derive(serde::Deserialize)]
+#[allow(non_snake_case)]
+struct AvatarExcelConfigDataEntry {
+    id: u32,
+    nameTextMapHash: u32,
+}
+
+pub fn build_character_id_map() -> anyhow::Result<HashMap<u32, String>> {
+    let avatar_excel_config: Vec<AvatarExcelConfigDataEntry> =
+        serde_json::from_str(include_str!("../../data/AvatarExcelConfigData.json"))?;
+
+    let mut result = HashMap::new();
+    for entry in avatar_excel_config {
         let hash_str = entry.nameTextMapHash.to_string();
         if let Some(text) = TEXT_MAP_EN.get(&hash_str) {
             result.insert(entry.id, map_name_to_good(text));

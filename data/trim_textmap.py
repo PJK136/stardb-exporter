@@ -3,7 +3,7 @@
 import json
 import shutil
 
-SOURCES=["DisplayItemExcelConfigData.json", "MaterialExcelConfigData.json", "WeaponExcelConfigData.json"]
+SOURCES=["AvatarExcelConfigData.json", "DisplayItemExcelConfigData.json", "MaterialExcelConfigData.json", "WeaponExcelConfigData.json"]
 TEXTMAP_JSON="TextMapEN.json"
 
 def get_name_hashes(file_path):
