@@ -33,6 +33,8 @@ You’re also free to reuse the code (at least the part I wrote) and improve it 
 
 Feel free to reach out to me here in this repository or on Discord with any questions.
 
+Thanks to [@konkers](https://github.com/konkers) for the character import feature.
+
 Thanks to [@IceDynamix](https://github.com/IceDynamix), [@hashblen](https://github.com/hashblen), and [@juliuskreutz](https://github.com/juliuskreutz/stardb-exporter) for their publicly available work, which made this possible.
 
 # Original Readme of stardb-exporter
