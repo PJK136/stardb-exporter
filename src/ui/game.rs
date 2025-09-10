@@ -30,7 +30,7 @@ pub fn show(ui: &mut egui::Ui, app: &App) {
             }
 
             if ui
-                .button("Inventory Exporter: filtered artifacts & equipped characters")
+                .button("Inventory Exporter: filtered artifacts & all characters")
                 .clicked()
             {
                 app.game.inventory(&app.message_tx, false, false);
@@ -50,7 +50,7 @@ pub fn show(ui: &mut egui::Ui, app: &App) {
             }
 
             if ui
-                .button("Inventory Exporter: all artifacts & equipped characters")
+                .button("Inventory Exporter: all artifacts & all characters")
                 .clicked()
             {
                 app.game.inventory(&app.message_tx, true, false);

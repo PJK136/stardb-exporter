@@ -16,8 +16,8 @@ You can download it here:
 It works the same way as the original `stardb-exporter`: run the game but don't go through the door, run the exporter, click on Inventory Exporter, go through the door, and wait for a button to copy the inventory to your clipboard. It will be in the [GOOD](https://frzyc.github.io/genshin-optimizer/#/doc) format so it is ready to be imported anywhere else.
 
 For the moment, these are the hard-coded filters:
-- Artifacts: at least at level 1 and at least a rarity of 3* (to avoid importing non-leveled artifacts and 1-2 stars are marked as invalid by Genshin Optimizer) or equipped if equipped characters are exported
-- Weapons: at least a rarity of 4* or at least at level 2 or at least at refinement 2 or is locked or equipped if equipped characters are exported
+- Artifacts: at least at level 1 and at least a rarity of 3* (to avoid importing non-leveled artifacts and 1-2 stars are marked as invalid by Genshin Optimizer) or equipped if characters are exported
+- Weapons: at least a rarity of 4* or at least at level 2 or at least at refinement 2 or is locked or equipped if characters are exported
 
 I haven't changed any other functionality including the sponsored section so I'm not related to anything else except the Inventory Exporter.
 
